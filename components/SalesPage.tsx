@@ -13,6 +13,13 @@ import {
 
 const funnelImages = Array.from({ length: 9 }, (_, index) => `/products/${index + 1}.png`);
 
+type OrderConfirmation = {
+  customerName: string;
+  deliveryAddress: string;
+  quantity: number;
+  amount: number;
+};
+
 export default function SalesPage() {
   const orderRef = useRef<HTMLElement>(null);
   const [packageId, setPackageId] = useState("one");
@@ -25,6 +32,7 @@ export default function SalesPage() {
   const [addressData, setAddressData] = useState<ThaiAddress[]>([]);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
 
   useEffect(() => {
     fetch("/thai-address-db.json")
@@ -79,7 +87,12 @@ export default function SalesPage() {
         return;
       }
 
-      setNotice("รับคำสั่งซื้อเรียบร้อย ทีมงานจะยืนยันข้อมูลก่อนจัดส่ง");
+      setConfirmation({
+        customerName: customerName.trim(),
+        deliveryAddress: [addressLine.trim(), district, amphoe, province, zipcode].filter(Boolean).join(" "),
+        quantity: selected.quantity,
+        amount: selected.price,
+      });
       setCustomerName("");
       setPhone("");
       setAddressLine("");
@@ -296,6 +309,52 @@ export default function SalesPage() {
         </div>
         <button type="button" onClick={scrollToOrder}>🛒 สั่งซื้อเลย</button>
       </div>
+
+      {confirmation && (
+        <div className="success-modal-backdrop">
+          <section
+            className="success-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-title"
+          >
+            <button
+              className="success-modal-close"
+              type="button"
+              aria-label="ปิดหน้าต่าง"
+              onClick={() => setConfirmation(null)}
+            >
+              ×
+            </button>
+            <div className="success-check" aria-hidden="true">✓</div>
+            <p className="success-kicker">ORDER CONFIRMED</p>
+            <h2 id="success-title">รับออเดอร์เรียบร้อย</h2>
+            <p className="success-thanks">ขอบคุณสำหรับคำสั่งซื้อครับ</p>
+
+            <div className="success-order-summary">
+              <span>รายการสั่งซื้อ</span>
+              <strong>เข็มขัดพยุงหลัง VERTIC · {confirmation.quantity} ชิ้น</strong>
+              <b>{formatBaht(confirmation.amount)}</b>
+              <small>ชำระเงินปลายทาง</small>
+            </div>
+
+            <div className="success-address">
+              <span>📍 จัดส่งที่</span>
+              <strong>{confirmation.customerName}</strong>
+              <address>{confirmation.deliveryAddress}</address>
+            </div>
+
+            <div className="success-next-steps">
+              <p>🚚 ทีมงานจะตรวจสอบข้อมูลก่อนจัดส่ง</p>
+              <p>💵 ชำระเงินเมื่อได้รับสินค้า ไม่ต้องโอนก่อน</p>
+            </div>
+
+            <button className="success-dismiss" type="button" onClick={() => setConfirmation(null)}>
+              ปิดหน้าต่างนี้
+            </button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
