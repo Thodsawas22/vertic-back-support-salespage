@@ -17,6 +17,21 @@ describe("order validation", () => {
     ).toEqual({ valid: true });
   });
 
+  it("accepts a concise rural Thai address when structured location fields are complete", () => {
+    expect(
+      validateOrder({
+        packageId: "one",
+        customerName: "ทดสอบ ทดสอบ",
+        phone: "0934953555",
+        addressLine: "179 ม.8",
+        province: "ขอนแก่น",
+        amphoe: "เมืองขอนแก่น",
+        district: "สำราญ",
+        zipcode: "40000",
+      }),
+    ).toEqual({ valid: true });
+  });
+
   it("rejects a malformed phone number and incomplete structured address", () => {
     expect(
       validateOrder({ packageId: "one", customerName: "สมชาย", phone: "123", addressLine: "บ้าน", province: "", amphoe: "", district: "", zipcode: "" }),
