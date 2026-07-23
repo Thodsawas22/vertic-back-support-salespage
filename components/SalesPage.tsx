@@ -194,12 +194,12 @@ export default function SalesPage() {
 
             <div className="form-fields">
               <label>
-                ชื่อ-นามสกุล
+                ชื่อผู้รับสินค้า
                 <input
                   required
                   value={customerName}
                   onChange={(event) => setCustomerName(event.target.value)}
-                  placeholder="ชื่อ-นามสกุล ผู้รับสินค้า"
+                  placeholder="ชื่อจริงของผู้รับสินค้า"
                 />
               </label>
               <label>

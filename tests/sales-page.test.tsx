@@ -31,7 +31,7 @@ describe("back support sales page", () => {
 
   it("collects structured Thai delivery details", () => {
     render(<SalesPage />);
-    expect(screen.getByLabelText("ชื่อ-นามสกุล")).toBeInTheDocument();
+    expect(screen.getByLabelText("ชื่อผู้รับสินค้า")).toBeInTheDocument();
     expect(screen.getByLabelText("เบอร์โทร")).toBeInTheDocument();
     expect(screen.getByLabelText("ที่อยู่ (เช่น เลขที่บ้าน ห้อง)")).toBeInTheDocument();
     expect(screen.getByLabelText("จังหวัด")).toBeInTheDocument();
