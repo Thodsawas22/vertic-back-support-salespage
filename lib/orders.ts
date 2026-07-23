@@ -20,7 +20,8 @@ export function validateOrder(input: OrderInput): ValidationResult {
   if (!packages.some((offer) => offer.id === input.packageId)) errors.packageId = "กรุณาเลือกแพ็กเกจ";
   if ((input.customerName ?? "").trim().length < 2) errors.customerName = "กรุณากรอกชื่อผู้รับสินค้า";
   if (!/^0\d{8,9}$/.test(phone)) errors.phone = "กรุณากรอกเบอร์โทรศัพท์ 9–10 หลัก";
-  if ((input.addressLine ?? "").trim().length < 5) errors.addressLine = "กรุณากรอกที่อยู่จัดส่งให้ครบ";
+  const addressLine = (input.addressLine ?? "").trim();
+  if (!addressLine || !/\d/.test(addressLine)) errors.addressLine = "กรุณากรอกที่อยู่จัดส่งให้ครบ";
   if (!(input.province ?? "").trim()) errors.province = "กรุณาเลือกจังหวัด";
   if (!(input.amphoe ?? "").trim()) errors.amphoe = "กรุณาเลือกอำเภอ/เขต";
   if (!(input.district ?? "").trim()) errors.district = "กรุณาเลือกตำบล/แขวง";

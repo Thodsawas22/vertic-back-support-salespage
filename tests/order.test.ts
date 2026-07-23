@@ -23,7 +23,7 @@ describe("order validation", () => {
         packageId: "one",
         customerName: "ทดสอบ ทดสอบ",
         phone: "0934953555",
-        addressLine: "179 ม.8",
+        addressLine: "179",
         province: "ขอนแก่น",
         amphoe: "เมืองขอนแก่น",
         district: "สำราญ",
