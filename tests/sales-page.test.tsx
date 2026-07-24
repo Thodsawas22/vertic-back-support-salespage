@@ -9,6 +9,8 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   delete window.fbq;
+  document.cookie = "_fbp=; Max-Age=0; path=/";
+  document.cookie = "_fbc=; Max-Age=0; path=/";
 });
 
 describe("back support sales page", () => {
@@ -69,11 +71,16 @@ describe("back support sales page", () => {
 
   it("confirms a successful order and tracks it as a lead rather than a paid purchase", async () => {
     window.fbq = vi.fn();
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    document.cookie = "_fbp=fb.1.123.abc; path=/";
+    document.cookie = "_fbc=fb.1.123.click; path=/";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       if (String(input).includes("thai-address-db.json")) {
         return new Response(JSON.stringify(rawAddressDatabase), { status: 200 });
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      return new Response(
+        JSON.stringify({ ok: true, orderId: "VRT-TEST", eventId: "lead-VRT-TEST" }),
+        { status: 200 },
+      );
     });
 
     render(<SalesPage />);
@@ -92,12 +99,15 @@ describe("back support sales page", () => {
     expect(dialog).toHaveTextContent("฿1,990");
     expect(dialog).toHaveTextContent("0934953555");
     expect(within(dialog).getByText(/179 สำราญ เมืองขอนแก่น ขอนแก่น 40000/)).toBeInTheDocument();
+    const orderCall = fetchMock.mock.calls.find(([input]) => String(input) === "/api/orders");
+    const submitted = JSON.parse(String(orderCall?.[1]?.body));
+    expect(submitted).toMatchObject({ fbp: "fb.1.123.abc", fbc: "fb.1.123.click" });
     expect(window.fbq).toHaveBeenCalledWith("track", "Lead", {
       content_ids: ["vertic-back-support"],
       content_name: "VERTIC Back Support",
       content_type: "product",
       currency: "THB",
       value: 1990,
-    });
+    }, { eventID: "lead-VRT-TEST" });
   });
 });

@@ -30,20 +30,40 @@ https://docs.google.com/spreadsheets/d/1dJa71bTOoDhq5-dva81EjjhuRMgQFOYzHdYbQJxM
 
 This machine has no authorized Google Workspace token, so the final Apps Script web-app deployment must be done from the owner’s logged-in Google account:
 
-1. While signed into the account that owns the sheet, open `https://script.google.com/` and create a new Apps Script project.
-2. Replace its default code with `google-apps-script/Code.gs` from this project. The sheet ID and `Orders` tab are already set.
-3. Replace `REPLACE_WITH_THE_SAME_SECRET_AS_.env.local` with a long random secret. Keep it private.
-4. **Deploy → New deployment → Web app**. Set **Execute as: Me** and choose the least permissive access that still lets the site call it; copy the resulting `/exec` URL.
-5. Copy `.env.example` to `.env.local`, then set:
+1. While signed into the account that owns the sheet, open the existing Apps Script project.
+2. Replace its code with `google-apps-script/Code.gs` from this project. The sheet ID and `Orders` tab are already set.
+3. In **Project Settings → Script properties**, set `WEBHOOK_SECRET` to the same private value used by Vercel.
+4. Select `setupOrderSheet` in the function menu and click **Run** once. Authorize it when prompted. This appends the operational columns without moving the existing 13 columns, adds the Status dropdown, and installs the status timestamp trigger.
+5. **Deploy → Manage deployments → Edit → New version → Deploy**. Keep **Execute as: Me** and **Who has access: Anyone** so Vercel can call it; retain the resulting `/exec` URL.
+6. Set these server-side variables locally and in Vercel Production:
 
 ```env
 GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/macros/s/.../exec
 GOOGLE_SHEETS_WEBHOOK_SECRET=the-same-secret
 ```
 
-6. Restart the local server and submit a test order. On the first successful request, the script creates the header row and appends the order into the `Orders` tab.
+7. Restart the local server or redeploy Vercel, then submit a test order. The webhook appends it to the `Orders` tab.
 
 The webhook URL and secret stay on the server; do not expose either via `NEXT_PUBLIC_` variables or browser code.
+
+## COD status and paid-order workflow
+
+New orders start as `NEW`. Update the `Status` dropdown manually using only:
+
+```text
+NEW → CONFIRMED → SHIPPED → PAID
+                   ↘ CANCELLED / RETURNED
+```
+
+- Mark `PAID` only after the carrier confirms COD collection/settlement—not when the customer submits the form or when the parcel merely ships.
+- Changes to `CONFIRMED`, `SHIPPED`, and `PAID` automatically stamp their matching date columns after `setupOrderSheet` installs the edit trigger.
+- Record the carrier tracking number, actual COD amount received, and any return reason in the operational columns.
+- `Order ID`, `Event ID`, `_fbp`, and `_fbc` are captured with each new web order to support a future server-side Meta Purchase event and attribution.
+- `Meta Purchase sent at` is reserved for the later CAPI automation; it is intentionally blank today.
+
+## Meta Pixel measurement
+
+Dataset `1595122382217844` receives `PageView`, `ViewContent`, `InitiateCheckout`, and a deduplicatable `Lead` only after the order webhook succeeds. Do **not** fire `Purchase` from the browser confirmation page for COD orders. A future server-side CAPI workflow should send `Purchase` only when the order becomes `PAID`.
 
 ## Honest social proof
 
@@ -62,4 +82,4 @@ npm test
 npm run build
 ```
 
-Last verified: 4 test files / 8 tests passed, and the production build completed successfully.
+Last verified: 6 test files / 15 tests passed, and the production build completed successfully.

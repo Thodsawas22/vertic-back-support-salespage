@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { formatBaht, packages } from "../lib/product";
 import { validateOrder } from "../lib/orders";
-import { trackMetaEvent } from "../lib/meta-pixel";
+import { getMetaBrowserIdentifiers, trackMetaEvent } from "../lib/meta-pixel";
 import {
   decodeThaiAddress,
   districtsForProvince,
@@ -96,6 +96,7 @@ export default function SalesPage() {
       amphoe,
       district,
       zipcode,
+      ...getMetaBrowserIdentifiers(),
     };
     const validation = validateOrder(payload);
 
@@ -128,7 +129,7 @@ export default function SalesPage() {
         content_type: "product",
         currency: "THB",
         value: selected.price,
-      });
+      }, result.eventId);
       setConfirmation({
         customerName: customerName.trim(),
         phone: phone.trim(),

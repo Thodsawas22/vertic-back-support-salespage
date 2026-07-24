@@ -1,5 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { normaliseOrder, OrderInput, validateOrder } from "../../../lib/orders";
+
+function cleanMetaBrowserId(value: unknown) {
+  return typeof value === "string" ? value.trim().slice(0, 255) : "";
+}
+
+function createOrderId() {
+  const time = Date.now().toString(36).toUpperCase();
+  const random = randomUUID().split("-")[0].toUpperCase();
+  return `VRT-${time}-${random}`;
+}
 
 export async function POST(request: Request) {
   let input: OrderInput;
@@ -15,7 +26,15 @@ export async function POST(request: Request) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   if (!webhookUrl) return NextResponse.json({ message: "ระบบรับออเดอร์ยังไม่ได้เชื่อมต่อ Google Sheets" }, { status: 503 });
 
-  const order = normaliseOrder(input as Required<OrderInput>);
+  const orderId = createOrderId();
+  const eventId = `lead-${orderId}`;
+  const order = {
+    ...normaliseOrder(input as Required<OrderInput>),
+    orderId,
+    eventId,
+    fbp: cleanMetaBrowserId(input.fbp),
+    fbc: cleanMetaBrowserId(input.fbc),
+  };
   try {
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -31,5 +50,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "บันทึกออเดอร์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, orderId, eventId });
 }

@@ -9,6 +9,8 @@ export type OrderInput = {
   amphoe?: string;
   district?: string;
   zipcode?: string;
+  fbp?: string;
+  fbc?: string;
 };
 
 type ValidationResult = { valid: true } | { valid: false; errors: Record<string, string> };
