@@ -69,7 +69,7 @@ describe("back support sales page", () => {
     expect(screen.getByText("กรุณาเลือกจังหวัด")).toBeInTheDocument();
   });
 
-  it("confirms a successful order and tracks it as a lead rather than a paid purchase", async () => {
+  it("confirms a successful COD order and tracks it as a browser Purchase", async () => {
     window.fbq = vi.fn();
     document.cookie = "_fbp=fb.1.123.abc; path=/";
     document.cookie = "_fbc=fb.1.123.click; path=/";
@@ -78,7 +78,7 @@ describe("back support sales page", () => {
         return new Response(JSON.stringify(rawAddressDatabase), { status: 200 });
       }
       return new Response(
-        JSON.stringify({ ok: true, orderId: "VRT-TEST", eventId: "lead-VRT-TEST" }),
+        JSON.stringify({ ok: true, orderId: "VRT-TEST", eventId: "purchase-VRT-TEST" }),
         { status: 200 },
       );
     });
@@ -102,12 +102,13 @@ describe("back support sales page", () => {
     const orderCall = fetchMock.mock.calls.find(([input]) => String(input) === "/api/orders");
     const submitted = JSON.parse(String(orderCall?.[1]?.body));
     expect(submitted).toMatchObject({ fbp: "fb.1.123.abc", fbc: "fb.1.123.click" });
-    expect(window.fbq).toHaveBeenCalledWith("track", "Lead", {
+    expect(window.fbq).toHaveBeenCalledWith("track", "Purchase", {
       content_ids: ["vertic-back-support"],
       content_name: "VERTIC Back Support",
       content_type: "product",
       currency: "THB",
+      num_items: 1,
       value: 1990,
-    }, { eventID: "lead-VRT-TEST" });
+    }, { eventID: "purchase-VRT-TEST" });
   });
 });

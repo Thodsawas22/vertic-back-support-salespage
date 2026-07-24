@@ -123,11 +123,12 @@ export default function SalesPage() {
         return;
       }
 
-      trackMetaEvent("Lead", {
+      trackMetaEvent("Purchase", {
         content_ids: ["vertic-back-support"],
         content_name: "VERTIC Back Support",
         content_type: "product",
         currency: "THB",
+        num_items: selected.quantity,
         value: selected.price,
       }, result.eventId);
       setConfirmation({

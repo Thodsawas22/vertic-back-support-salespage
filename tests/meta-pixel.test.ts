@@ -16,13 +16,13 @@ describe("Meta Pixel", () => {
   it("forwards an event ID for future browser/server deduplication", () => {
     window.fbq = vi.fn();
 
-    trackMetaEvent("Lead", { currency: "THB", value: 1990 }, "lead-VRT-123");
+    trackMetaEvent("Purchase", { currency: "THB", value: 1990 }, "purchase-VRT-123");
 
     expect(window.fbq).toHaveBeenCalledWith(
       "track",
-      "Lead",
+      "Purchase",
       { currency: "THB", value: 1990 },
-      { eventID: "lead-VRT-123" },
+      { eventID: "purchase-VRT-123" },
     );
   });
 

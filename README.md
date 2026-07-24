@@ -58,12 +58,12 @@ NEW → CONFIRMED → SHIPPED → PAID
 - Mark `PAID` only after the carrier confirms COD collection/settlement—not when the customer submits the form or when the parcel merely ships.
 - Changes to `CONFIRMED`, `SHIPPED`, and `PAID` automatically stamp their matching date columns after `setupOrderSheet` installs the edit trigger.
 - Record the carrier tracking number, actual COD amount received, and any return reason in the operational columns.
-- `Order ID`, `Event ID`, `_fbp`, and `_fbc` are captured with each new web order to support a future server-side Meta Purchase event and attribution.
-- `Meta Purchase sent at` is reserved for the later CAPI automation; it is intentionally blank today.
+- `Order ID`, `Event ID`, `_fbp`, and `_fbc` are captured with each new web order to deduplicate its browser Purchase event and preserve attribution.
+- `Meta Purchase sent at` remains reserved for a future server-side paid-status reconciliation; browser Purchase is sent immediately when the order webhook succeeds.
 
 ## Meta Pixel measurement
 
-Dataset `1595122382217844` receives `PageView`, `ViewContent`, `InitiateCheckout`, and a deduplicatable `Lead` only after the order webhook succeeds. Do **not** fire `Purchase` from the browser confirmation page for COD orders. A future server-side CAPI workflow should send `Purchase` only when the order becomes `PAID`.
+Dataset `1595122382217844` receives `PageView`, `ViewContent`, `InitiateCheckout`, and a deduplicatable `Purchase` after the order webhook succeeds. For this COD setup, Meta's browser `Purchase` means **order placed**, while the Sheet's `PAID` status remains the source of truth for cash actually collected. Report order-created CPP and mature paid CPP separately; do not treat Ads Manager Purchase ROAS as realized cash.
 
 ## Honest social proof
 

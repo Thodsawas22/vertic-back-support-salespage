@@ -37,7 +37,7 @@ describe("order API tracking", () => {
 
     expect(response.status).toBe(200);
     expect(result.orderId).toMatch(/^VRT-/);
-    expect(result.eventId).toBe(`lead-${result.orderId}`);
+    expect(result.eventId).toBe(`purchase-${result.orderId}`);
     expect(forwarded.order).toMatchObject({
       orderId: result.orderId,
       eventId: result.eventId,

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   if (!webhookUrl) return NextResponse.json({ message: "ระบบรับออเดอร์ยังไม่ได้เชื่อมต่อ Google Sheets" }, { status: 503 });
 
   const orderId = createOrderId();
-  const eventId = `lead-${orderId}`;
+  const eventId = `purchase-${orderId}`;
   const order = {
     ...normaliseOrder(input as Required<OrderInput>),
     orderId,
