@@ -8,6 +8,7 @@ import rawAddressDatabase from "../public/thai-address-db.json";
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  delete window.fbq;
 });
 
 describe("back support sales page", () => {
@@ -23,14 +24,21 @@ describe("back support sales page", () => {
     expect(screen.getByText(/ผสานโครงสร้างพยุง 4 จุดเข้ากับระบบดึงปรับแรงแบบคู่/i)).toBeInTheDocument();
   });
 
-  it("uses all nine supplied images in sales-funnel sequence and floats an order CTA to the form", () => {
+  it("uses all nine supplied images and tracks the first order CTA as checkout intent", () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
+    window.fbq = vi.fn();
     render(<SalesPage />);
 
     expect(screen.getAllByAltText(/Sales funnel image/i)).toHaveLength(9);
     fireEvent.click(screen.getByRole("button", { name: /สั่งซื้อเลย/i }));
     expect(scrollIntoView).toHaveBeenCalled();
+    expect(window.fbq).toHaveBeenCalledWith("track", "InitiateCheckout", {
+      content_ids: ["vertic-back-support"],
+      content_type: "product",
+      currency: "THB",
+      value: 1990,
+    });
   });
 
   it("collects structured Thai delivery details", () => {
@@ -59,7 +67,8 @@ describe("back support sales page", () => {
     expect(screen.getByText("กรุณาเลือกจังหวัด")).toBeInTheDocument();
   });
 
-  it("confirms a successful order with its phone number and delivery address", async () => {
+  it("confirms a successful order and tracks it as a lead rather than a paid purchase", async () => {
+    window.fbq = vi.fn();
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       if (String(input).includes("thai-address-db.json")) {
         return new Response(JSON.stringify(rawAddressDatabase), { status: 200 });
@@ -83,5 +92,12 @@ describe("back support sales page", () => {
     expect(dialog).toHaveTextContent("฿1,990");
     expect(dialog).toHaveTextContent("0934953555");
     expect(within(dialog).getByText(/179 สำราญ เมืองขอนแก่น ขอนแก่น 40000/)).toBeInTheDocument();
+    expect(window.fbq).toHaveBeenCalledWith("track", "Lead", {
+      content_ids: ["vertic-back-support"],
+      content_name: "VERTIC Back Support",
+      content_type: "product",
+      currency: "THB",
+      value: 1990,
+    });
   });
 });

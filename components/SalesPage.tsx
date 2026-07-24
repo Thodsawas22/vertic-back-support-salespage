@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { formatBaht, packages } from "../lib/product";
 import { validateOrder } from "../lib/orders";
+import { trackMetaEvent } from "../lib/meta-pixel";
 import {
   decodeThaiAddress,
   districtsForProvince,
@@ -24,6 +25,7 @@ type OrderConfirmation = {
 
 export default function SalesPage() {
   const orderRef = useRef<HTMLElement>(null);
+  const checkoutTracked = useRef(false);
   const [packageId, setPackageId] = useState("one");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -60,6 +62,15 @@ export default function SalesPage() {
   );
 
   const scrollToOrder = () => {
+    if (!checkoutTracked.current) {
+      trackMetaEvent("InitiateCheckout", {
+        content_ids: ["vertic-back-support"],
+        content_type: "product",
+        currency: "THB",
+        value: selected.price,
+      });
+      checkoutTracked.current = true;
+    }
     orderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -111,6 +122,13 @@ export default function SalesPage() {
         return;
       }
 
+      trackMetaEvent("Lead", {
+        content_ids: ["vertic-back-support"],
+        content_name: "VERTIC Back Support",
+        content_type: "product",
+        currency: "THB",
+        value: selected.price,
+      });
       setConfirmation({
         customerName: customerName.trim(),
         phone: phone.trim(),
