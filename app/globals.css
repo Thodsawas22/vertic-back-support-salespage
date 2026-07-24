@@ -512,6 +512,25 @@ legend {
   box-shadow: 0 0 0 3px rgb(33 118 203 / 13%);
 }
 
+.form-fields [aria-invalid="true"] {
+  border-color: #e52d35;
+  background: #fff7f7;
+  box-shadow: 0 0 0 3px rgb(229 45 53 / 11%);
+}
+
+.form-fields .has-error {
+  color: #b71925;
+}
+
+.field-error-message {
+  display: block;
+  margin-top: 6px;
+  color: #d4212d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .form-fields textarea {
   min-height: 95px;
   resize: vertical;
@@ -725,6 +744,13 @@ legend {
   color: #0b2854;
   font-size: 15px;
   font-weight: 800;
+}
+
+.success-phone {
+  margin: 2px 0 0;
+  color: #1672ae;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .success-address address {

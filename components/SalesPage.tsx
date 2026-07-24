@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { formatBaht, packages } from "../lib/product";
+import { validateOrder } from "../lib/orders";
 import {
   decodeThaiAddress,
   districtsForProvince,
@@ -15,6 +16,7 @@ const funnelImages = Array.from({ length: 9 }, (_, index) => `/products/${index 
 
 type OrderConfirmation = {
   customerName: string;
+  phone: string;
   deliveryAddress: string;
   quantity: number;
   amount: number;
@@ -31,6 +33,7 @@ export default function SalesPage() {
   const [district, setDistrict] = useState("");
   const [addressData, setAddressData] = useState<ThaiAddress[]>([]);
   const [notice, setNotice] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
 
@@ -60,35 +63,57 @@ export default function SalesPage() {
     orderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const clearFieldError = (field: string) => {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice("");
+
+    const payload = {
+      packageId,
+      customerName,
+      phone,
+      addressLine,
+      province,
+      amphoe,
+      district,
+      zipcode,
+    };
+    const validation = validateOrder(payload);
+
+    if (!validation.valid) {
+      setFieldErrors(validation.errors);
+      setNotice("กรุณาตรวจสอบช่องที่แสดงเป็นสีแดง");
+      return;
+    }
+
+    setFieldErrors({});
     setSubmitting(true);
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          packageId,
-          customerName,
-          phone,
-          addressLine,
-          province,
-          amphoe,
-          district,
-          zipcode,
-        }),
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
 
       if (!response.ok) {
+        setFieldErrors(result.errors ?? {});
         setNotice(result.message ?? "ยังบันทึกคำสั่งซื้อไม่ได้ กรุณาตรวจข้อมูลอีกครั้ง");
         return;
       }
 
       setConfirmation({
         customerName: customerName.trim(),
+        phone: phone.trim(),
         deliveryAddress: [addressLine.trim(), district, amphoe, province, zipcode].filter(Boolean).join(" "),
         quantity: selected.quantity,
         amount: selected.price,
@@ -175,7 +200,7 @@ export default function SalesPage() {
             <span>ส่งฟรีทั่วไทย · ไม่ต้องโอนก่อน</span>
           </div>
 
-          <form className="order-card" onSubmit={submitOrder}>
+          <form className="order-card" onSubmit={submitOrder} noValidate>
             <fieldset>
               <legend>เลือกแพ็กเกจ</legend>
               <div className="offer-grid">
@@ -206,84 +231,134 @@ export default function SalesPage() {
             </fieldset>
 
             <div className="form-fields">
-              <label>
+              <label className={fieldErrors.customerName ? "has-error" : ""}>
                 ชื่อผู้รับสินค้า
                 <input
+                  name="customerName"
+                  aria-label="ชื่อผู้รับสินค้า"
                   required
                   value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.customerName)}
+                  aria-describedby={fieldErrors.customerName ? "customerName-error" : undefined}
+                  onChange={(event) => {
+                    setCustomerName(event.target.value);
+                    clearFieldError("customerName");
+                  }}
                   placeholder="ชื่อจริงของผู้รับสินค้า"
                 />
+                {fieldErrors.customerName && <span className="field-error-message" id="customerName-error">{fieldErrors.customerName}</span>}
               </label>
-              <label>
+              <label className={fieldErrors.phone ? "has-error" : ""}>
                 เบอร์โทร
                 <input
+                  name="phone"
+                  aria-label="เบอร์โทร"
                   required
                   inputMode="tel"
                   value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.phone)}
+                  aria-describedby={fieldErrors.phone ? "phone-error" : undefined}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    clearFieldError("phone");
+                  }}
                   placeholder="เบอร์โทรศัพท์ 9–10 หลัก"
                 />
+                {fieldErrors.phone && <span className="field-error-message" id="phone-error">{fieldErrors.phone}</span>}
               </label>
-              <label>
+              <label className={fieldErrors.addressLine ? "has-error" : ""}>
                 ที่อยู่ (เช่น เลขที่บ้าน ห้อง)
                 <textarea
+                  name="addressLine"
+                  aria-label="ที่อยู่ (เช่น เลขที่บ้าน ห้อง)"
                   required
                   value={addressLine}
-                  onChange={(event) => setAddressLine(event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.addressLine)}
+                  aria-describedby={fieldErrors.addressLine ? "addressLine-error" : undefined}
+                  onChange={(event) => {
+                    setAddressLine(event.target.value);
+                    clearFieldError("addressLine");
+                  }}
                   placeholder="บ้านเลขที่ หมู่ อาคาร ซอย ถนน ห้อง"
                 />
+                {fieldErrors.addressLine && <span className="field-error-message" id="addressLine-error">{fieldErrors.addressLine}</span>}
               </label>
 
               <div className="address-grid">
-                <label>
+                <label className={fieldErrors.province ? "has-error" : ""}>
                   จังหวัด
                   <select
+                    name="province"
                     aria-label="จังหวัด"
                     required
                     value={province}
+                    aria-invalid={Boolean(fieldErrors.province)}
+                    aria-describedby={fieldErrors.province ? "province-error" : undefined}
                     onChange={(event) => {
                       setProvince(event.target.value);
                       setAmphoe("");
                       setDistrict("");
+                      clearFieldError("province");
                     }}
                   >
                     <option value="">เลือกจังหวัด</option>
                     {provinceOptions.map((item) => <option value={item} key={item}>{item}</option>)}
                   </select>
+                  {fieldErrors.province && <span className="field-error-message" id="province-error">{fieldErrors.province}</span>}
                 </label>
-                <label>
+                <label className={fieldErrors.amphoe ? "has-error" : ""}>
                   อำเภอ/เขต
                   <select
+                    name="amphoe"
                     aria-label="อำเภอ/เขต"
                     required
                     disabled={!province}
                     value={amphoe}
+                    aria-invalid={Boolean(fieldErrors.amphoe)}
+                    aria-describedby={fieldErrors.amphoe ? "amphoe-error" : undefined}
                     onChange={(event) => {
                       setAmphoe(event.target.value);
                       setDistrict("");
+                      clearFieldError("amphoe");
                     }}
                   >
                     <option value="">เลือกอำเภอ/เขต</option>
                     {amphoeOptions.map((item) => <option value={item} key={item}>{item}</option>)}
                   </select>
+                  {fieldErrors.amphoe && <span className="field-error-message" id="amphoe-error">{fieldErrors.amphoe}</span>}
                 </label>
-                <label>
+                <label className={fieldErrors.district ? "has-error" : ""}>
                   ตำบล/แขวง
                   <select
+                    name="district"
                     aria-label="ตำบล/แขวง"
                     required
                     disabled={!amphoe}
                     value={district}
-                    onChange={(event) => setDistrict(event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.district)}
+                    aria-describedby={fieldErrors.district ? "district-error" : undefined}
+                    onChange={(event) => {
+                      setDistrict(event.target.value);
+                      clearFieldError("district");
+                    }}
                   >
                     <option value="">เลือกตำบล/แขวง</option>
                     {districtOptions.map((item) => <option value={item} key={item}>{item}</option>)}
                   </select>
+                  {fieldErrors.district && <span className="field-error-message" id="district-error">{fieldErrors.district}</span>}
                 </label>
-                <label>
+                <label className={fieldErrors.zipcode ? "has-error" : ""}>
                   รหัสไปรษณีย์
-                  <input aria-label="รหัสไปรษณีย์" value={zipcode} readOnly placeholder="เลือกพื้นที่ก่อน" />
+                  <input
+                    name="zipcode"
+                    aria-label="รหัสไปรษณีย์"
+                    value={zipcode}
+                    aria-invalid={Boolean(fieldErrors.zipcode)}
+                    aria-describedby={fieldErrors.zipcode ? "zipcode-error" : undefined}
+                    readOnly
+                    placeholder="เลือกพื้นที่ก่อน"
+                  />
+                  {fieldErrors.zipcode && <span className="field-error-message" id="zipcode-error">{fieldErrors.zipcode}</span>}
                 </label>
               </div>
             </div>
@@ -341,6 +416,7 @@ export default function SalesPage() {
             <div className="success-address">
               <span>📍 จัดส่งที่</span>
               <strong>{confirmation.customerName}</strong>
+              <p className="success-phone">☎ {confirmation.phone}</p>
               <address>{confirmation.deliveryAddress}</address>
             </div>
 

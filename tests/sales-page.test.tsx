@@ -43,7 +43,23 @@ describe("back support sales page", () => {
     expect(screen.getByLabelText("ตำบล/แขวง")).toBeInTheDocument();
   });
 
-  it("confirms a successful order with its delivery address", async () => {
+  it("marks each incomplete or invalid field with an inline error", () => {
+    render(<SalesPage />);
+
+    fireEvent.change(screen.getByLabelText("ชื่อผู้รับสินค้า"), { target: { value: "ทดสอบ" } });
+    fireEvent.change(screen.getByLabelText("เบอร์โทร"), { target: { value: "123" } });
+    fireEvent.change(screen.getByLabelText("ที่อยู่ (เช่น เลขที่บ้าน ห้อง)"), { target: { value: "บ้าน" } });
+    fireEvent.submit(screen.getByRole("button", { name: /ยืนยันการสั่งซื้อ/i }).closest("form")!);
+
+    expect(screen.getByLabelText("ชื่อผู้รับสินค้า")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByLabelText("เบอร์โทร")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("ที่อยู่ (เช่น เลขที่บ้าน ห้อง)")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("จังหวัด")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("กรุณากรอกเบอร์โทรศัพท์ 9–10 หลัก")).toBeInTheDocument();
+    expect(screen.getByText("กรุณาเลือกจังหวัด")).toBeInTheDocument();
+  });
+
+  it("confirms a successful order with its phone number and delivery address", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       if (String(input).includes("thai-address-db.json")) {
         return new Response(JSON.stringify(rawAddressDatabase), { status: 200 });
@@ -65,6 +81,7 @@ describe("back support sales page", () => {
     const dialog = await screen.findByRole("dialog", { name: /รับออเดอร์เรียบร้อย/i });
     expect(dialog).toHaveTextContent("1 ชิ้น");
     expect(dialog).toHaveTextContent("฿1,990");
+    expect(dialog).toHaveTextContent("0934953555");
     expect(within(dialog).getByText(/179 สำราญ เมืองขอนแก่น ขอนแก่น 40000/)).toBeInTheDocument();
   });
 });
